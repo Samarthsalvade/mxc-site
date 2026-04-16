@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MXC — FiveM Assets</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/reset.css" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/modal.css" />
+</head>
+<body>
+
+  <!-- ░░ CUSTOM CURSOR ░░ -->
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+
+  <!-- ░░ NAV ░░ -->
+  <nav id="nav">
+    <a class="nav-logo" href="#">MXC</a>
+    <ul class="nav-links">
+      <li><a href="#features">Products</a></li>
+      <li><a href="#testimonials">Reviews</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#">Docs</a></li>
+      <li><a href="#">Partners</a></li>
+    </ul>
+    <a href="#pricing" class="nav-cta">Login with FiveM</a>
+  </nav>
+
+  <!-- ░░ HERO ░░ -->
+  <section id="hero">
+    <canvas id="car-canvas"></canvas>
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+
+    <div class="hero-content">
+      <p class="eyebrow" data-anim="fadeUp" data-delay="0">Official FiveM Asset Marketplace</p>
+      <h1 class="hero-title" data-anim="fadeUp" data-delay="100">
+        Selling FiveM<br><span class="grad">assets</span><br>to the world.
+      </h1>
+      <p class="hero-sub" data-anim="fadeUp" data-delay="220">
+        Empower your roleplay server with scripts, maps &amp; interiors<br>that set you apart from the crowd.
+      </p>
+      <div class="hero-actions" data-anim="fadeUp" data-delay="340">
+        <button class="btn-primary" id="btn-showcase">View Showcase</button>
+        <a href="#pricing" class="btn-ghost">Browse Products →</a>
+      </div>
+    </div>
+
+    <div class="hero-stats" data-anim="fadeUp" data-delay="460">
+      <div class="stat"><span class="stat-num" data-count="10000">0</span><span class="stat-plus">+</span><div class="stat-label">Products Sold</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" data-count="11000">0</span><span class="stat-plus">+</span><div class="stat-label">Customers</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><span class="stat-num" data-count="100">0</span><span class="stat-plus">%</span><div class="stat-label">Optimized</div></div>
+    </div>
+
+    <div class="scroll-hint">
+      <div class="scroll-line"></div>
+      <span>Scroll</span>
+    </div>
+  </section>
+
+  <!-- ░░ STICKY WORD REVEAL ░░ -->
+  <div id="sticky-block">
+    <div class="sticky-inner">
+      <p class="sticky-words" id="sticky-words">
+        <span class="w" data-i="0">The</span>
+        <span class="w accent" data-i="1">fastest</span>
+        <span class="w" data-i="2">growing</span>
+        <span class="w" data-i="3">FiveM</span>
+        <span class="w accent" data-i="4">marketplace</span>
+        <span class="w" data-i="5">trusted</span>
+        <span class="w" data-i="6">by</span>
+        <span class="w accent" data-i="7">thousands</span>
+        <span class="w" data-i="8">of</span>
+        <span class="w" data-i="9">server</span>
+        <span class="w accent" data-i="10">owners</span>
+        <span class="w" data-i="11">worldwide.</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- ░░ MARQUEE PRODUCTS ░░ -->
+  <section id="marquee-section">
+    <p class="section-eyebrow center">Our Products</p>
+    <div class="marquee-wrap">
+      <div class="marquee-track" id="marquee-track">
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Utility Kitchen</div><div class="m-price">€19</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Vagos Hideout</div><div class="m-price">€34</div></div>
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Utility Bank</div><div class="m-price">€24</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Hayes Auto V2</div><div class="m-price">€29</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Pawn Shop</div><div class="m-price">€18</div></div>
+        <div class="m-card"><div class="m-tag">HQ</div><div class="m-name">FIB Headquarters</div><div class="m-price">€49</div></div>
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Vending Machines</div><div class="m-price">€15</div></div>
+        <div class="m-card"><div class="m-tag">Interior</div><div class="m-name">Utility Kitchen (Pizza)</div><div class="m-price">€22</div></div>
+        <div class="m-card"><div class="m-tag">Interior</div><div class="m-name">Utility Kitchen (Kebab)</div><div class="m-price">€22</div></div>
+        <!-- duplicated for loop -->
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Utility Kitchen</div><div class="m-price">€19</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Vagos Hideout</div><div class="m-price">€34</div></div>
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Utility Bank</div><div class="m-price">€24</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Hayes Auto V2</div><div class="m-price">€29</div></div>
+        <div class="m-card"><div class="m-tag">Map</div><div class="m-name">Pawn Shop</div><div class="m-price">€18</div></div>
+        <div class="m-card"><div class="m-tag">HQ</div><div class="m-name">FIB Headquarters</div><div class="m-price">€49</div></div>
+        <div class="m-card"><div class="m-tag">Script</div><div class="m-name">Vending Machines</div><div class="m-price">€15</div></div>
+        <div class="m-card"><div class="m-tag">Interior</div><div class="m-name">Utility Kitchen (Pizza)</div><div class="m-price">€22</div></div>
+        <div class="m-card"><div class="m-tag">Interior</div><div class="m-name">Utility Kitchen (Kebab)</div><div class="m-price">€22</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ FEATURES BENTO ░░ -->
+  <section id="features">
+    <div class="section-header">
+      <p class="section-eyebrow">Why MXC</p>
+      <h2 class="section-title">Built for<br>serious servers.</h2>
+    </div>
+    <div class="bento-grid">
+      <div class="bento-cell span2" data-reveal>
+        <div class="cell-icon">⚡</div>
+        <div class="cell-title">Zero FPS Impact</div>
+        <div class="cell-desc">Every script is benchmarked and optimized obsessively. Your players will never notice a performance drop — only the quality.</div>
+        <div class="cell-big">0.00ms</div>
+      </div>
+      <div class="bento-cell" data-reveal data-delay="100">
+        <div class="cell-icon">🎯</div>
+        <div class="cell-title">Plug &amp; Play</div>
+        <div class="cell-desc">Drop in, configure once, done. No week-long lua deep dives.</div>
+      </div>
+      <div class="bento-cell" data-reveal data-delay="150">
+        <div class="cell-icon">🛡</div>
+        <div class="cell-title">Premium Support</div>
+        <div class="cell-desc">Real humans, fast tickets. Problems resolved before you finish typing.</div>
+      </div>
+      <div class="bento-cell span2" data-reveal data-delay="200">
+        <div class="cell-icon">🗺</div>
+        <div class="cell-title">Hand-Crafted Maps</div>
+        <div class="cell-desc">Built around FiveM's rendering pipeline, prop limits, and lore-friendly placement. Compatible with every major creator on the market.</div>
+        <div class="cell-big">50+</div>
+      </div>
+      <div class="bento-cell" data-reveal data-delay="250">
+        <div class="cell-icon">🔄</div>
+        <div class="cell-title">Lifetime Updates</div>
+        <div class="cell-desc">Buy once. Patched forever. Often before you notice the bug.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ TESTIMONIALS ░░ -->
+  <section id="testimonials">
+    <p class="section-eyebrow center">Social Proof</p>
+    <h2 class="section-title center">What our<br>customers say.</h2>
+    <div class="testi-grid">
+      <div class="testi-card" data-reveal><div class="stars">★★★★★</div><p>"Fast response, maps are great! Love the themes. I will be back soon."</p><strong>Kevin</strong> — Server Owner</div>
+      <div class="testi-card" data-reveal data-delay="80"><div class="stars">★★★★★</div><p>"Fast support and incredible developer. Solved my problem perfectly. Keep going!"</p><strong>Sr. Asorey</strong> — Developer</div>
+      <div class="testi-card" data-reveal data-delay="160"><div class="stars">★★★★★</div><p>"No fps drops and the quality is one of the best on the market. Amazing job."</p><strong>L3MONM3LON</strong> — Community Admin</div>
+      <div class="testi-card" data-reveal data-delay="80"><div class="stars">★★★★★</div><p>"Issues were patched before I even had the chance to make a ticket. Works perfect!"</p><strong>Ash</strong> — Server Owner</div>
+      <div class="testi-card" data-reveal data-delay="160"><div class="stars">★★★★★</div><p>"As a beginner the team guided me through everything. Animations are superb."</p><strong>Freezifox</strong> — Beginner Dev</div>
+      <div class="testi-card" data-reveal data-delay="240"><div class="stars">★★★★★</div><p>"Impeccable quality and service. Compatibility with other creators and much more."</p><strong>Fortal</strong> — FiveM Creator</div>
+    </div>
+  </section>
+
+  <!-- ░░ LIVE TICKER ░░ -->
+  <div id="ticker-bar">
+    <span class="ticker-label">Live Purchases</span>
+    <div class="ticker-track" id="ticker-track">
+      <span class="t-item"><span class="t-dot"></span><b>Roni132</b> bought Utility Kitchen (Pizza)</span>
+      <span class="t-item"><span class="t-dot"></span><b>Lurunigame91</b> bought Pawn Shop</span>
+      <span class="t-item"><span class="t-dot"></span><b>Buurtwachttt</b> bought Collector 1x Month</span>
+      <span class="t-item"><span class="t-dot"></span><b>baptiste235</b> bought Utility Kitchen</span>
+      <span class="t-item"><span class="t-dot"></span><b>Rick1782</b> bought Utility Kitchen (Kebab)</span>
+      <span class="t-item"><span class="t-dot"></span><b>Agarbone</b> bought Vagos Hideout</span>
+      <span class="t-item"><span class="t-dot"></span><b>Scrypt_Rp</b> bought Utility Bank</span>
+      <span class="t-item"><span class="t-dot"></span><b>419.boogie</b> bought Hayes Auto V2</span>
+      <span class="t-item"><span class="t-dot"></span><b>ImCarlos1430</b> bought Collector 1x Month</span>
+      <span class="t-item"><span class="t-dot"></span><b>LevelX</b> bought FIB Headquarters</span>
+      <span class="t-item"><span class="t-dot"></span><b>Roni132</b> bought Utility Kitchen (Pizza)</span>
+      <span class="t-item"><span class="t-dot"></span><b>Lurunigame91</b> bought Pawn Shop</span>
+      <span class="t-item"><span class="t-dot"></span><b>Buurtwachttt</b> bought Collector 1x Month</span>
+      <span class="t-item"><span class="t-dot"></span><b>baptiste235</b> bought Utility Kitchen</span>
+      <span class="t-item"><span class="t-dot"></span><b>Rick1782</b> bought Utility Kitchen (Kebab)</span>
+    </div>
+  </div>
+
+  <!-- ░░ PRICING ░░ -->
+  <section id="pricing">
+    <p class="section-eyebrow center">Subscription</p>
+    <h2 class="section-title center">Simple pricing.</h2>
+    <div class="pricing-row">
+      <div class="p-card" data-reveal>
+        <div class="p-tier">Starter</div>
+        <div class="p-price"><sup>€</sup>9</div>
+        <div class="p-period">/ month</div>
+        <hr class="p-hr"/>
+        <ul class="p-feats">
+          <li>Access to 5 scripts</li>
+          <li>Standard support</li>
+          <li>Free updates</li>
+        </ul>
+        <button class="p-btn ghost" onclick="openModal('starter')">Get Started</button>
+      </div>
+      <div class="p-card featured" data-reveal data-delay="100">
+        <div class="p-badge">Most Popular</div>
+        <div class="p-tier">Collector</div>
+        <div class="p-price"><sup>€</sup>29</div>
+        <div class="p-period">/ month</div>
+        <hr class="p-hr"/>
+        <ul class="p-feats">
+          <li>Access to ALL products</li>
+          <li>Priority support</li>
+          <li>Lifetime updates</li>
+          <li>Early access releases</li>
+        </ul>
+        <button class="p-btn solid" onclick="openModal('collector')">Subscribe Now</button>
+      </div>
+      <div class="p-card" data-reveal data-delay="200">
+        <div class="p-tier">Enterprise</div>
+        <div class="p-price"><sup>€</sup>79</div>
+        <div class="p-period">/ month</div>
+        <hr class="p-hr"/>
+        <ul class="p-feats">
+          <li>Everything in Collector</li>
+          <li>Custom modifications</li>
+          <li>Dedicated agent</li>
+          <li>Private assets</li>
+        </ul>
+        <button class="p-btn ghost" onclick="openModal('enterprise')">Contact Us</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ CTA ░░ -->
+  <section id="cta">
+    <div class="cta-bg"></div>
+    <h2 class="cta-title" data-reveal>Ready to<br>stand <span class="grad">apart?</span></h2>
+    <p class="cta-sub" data-reveal data-delay="200">Join thousands of server owners who trust MXC.</p>
+    <a href="#pricing" class="btn-primary" data-reveal data-delay="350">Get Started Today</a>
+  </section>
+
+  <!-- ░░ FOOTER ░░ -->
+  <footer>
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="foot-logo">MXC</div>
+        <p>The premier FiveM asset marketplace trusted by servers worldwide.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col"><h4>Discover</h4><a href="#">Products</a><a href="#">Partners</a><a href="#">Blog</a><a href="#">Team</a></div>
+        <div class="foot-col"><h4>Company</h4><a href="#">Support</a><a href="#">Feedback</a><a href="#">Terms</a><a href="#">Privacy</a></div>
+        <div class="foot-col"><h4>Connect</h4><a href="#">Discord</a><a href="#">Twitter / X</a><a href="#">GitHub</a></div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© MXC 2020–2026. Not affiliated with Cfx.re or Rockstar Games.</span>
+      <span>Built by the MXC Team</span>
+    </div>
+  </footer>
+
+  <!-- ░░ SHOWCASE MODAL ░░ -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal-box" id="modal-box">
+      <button class="modal-close" id="modal-close">✕</button>
+      <!-- content injected by modal.js -->
+    </div>
+  </div>
+
+  <script src="js/cursor.js"></script>
+  <script src="js/car.js"></script>
+  <script src="js/scroll.js"></script>
+  <script src="js/counter.js"></script>
+  <script src="js/modal.js"></script>
+</body>
+</html>
