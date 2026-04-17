@@ -280,7 +280,18 @@
   .bento-cell.span2 { grid-column: span 2; }
   .bento-cell.visible { opacity: 1; transform: translateY(0); }
   .bento-cell:hover { border-color: rgba(255,255,255,.12); }
-  .cell-icon { font-size: 1.5rem; margin-bottom: 1rem; }
+  .cell-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: rgba(0,229,255,0.07);
+    border: 1px solid rgba(0,229,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.2rem;
+  }
+  .cell-icon i, .cell-icon svg {
+    width: 20px; height: 20px;
+    stroke: var(--cyan); stroke-width: 1.5;
+    fill: none;
+  }
   .cell-title { font-size: 1.05rem; font-weight: 500; color: #fff; margin-bottom: .5rem; }
   .cell-desc { font-size: .87rem; color: var(--muted); line-height: 1.75; }
   .cell-big {
@@ -304,7 +315,14 @@
   }
   .testi-card.visible { opacity: 1; transform: translateY(0); }
   .testi-card:hover { border-color: rgba(255,255,255,.14); }
-  .stars { color: var(--cyan); font-size: .8rem; letter-spacing: 2px; margin-bottom: .9rem; }
+  .stars {
+    display: flex; gap: 4px; margin-bottom: .9rem;
+  }
+  .stars i, .stars svg {
+    width: 14px; height: 14px;
+    stroke: var(--cyan); stroke-width: 1.5;
+    fill: var(--cyan);
+  }
   .testi-card p { font-size: .9rem; color: #b0bdd4; line-height: 1.72; margin-bottom: 1.2rem; }
   .testi-card strong { font-size: .8rem; color: #fff; font-weight: 400; }
   
@@ -408,8 +426,12 @@
   .foot-cols { display: flex; gap: 4rem; flex: 1; justify-content: flex-end; }
   .foot-col { display: flex; flex-direction: column; gap: .7rem; }
   .foot-col h4 { font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.35); margin-bottom: .3rem; font-weight: 400; }
-  .foot-col a { font-size: .85rem; color: var(--muted); transition: color .2s; }
+  .foot-col a { font-size: .85rem; color: var(--muted); transition: color .2s; display: flex; align-items: center; gap: .5rem; }
   .foot-col a:hover { color: #fff; }
+  .foot-col a i, .foot-col a svg {
+    width: 14px; height: 14px;
+    stroke: currentColor; stroke-width: 1.5; fill: none; flex-shrink: 0;
+  }
   .foot-bottom {
     display: flex; justify-content: space-between; align-items: center;
     padding-top: 2rem; border-top: 1px solid var(--border);
