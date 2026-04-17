@@ -6,6 +6,15 @@
   <title>MXC — FiveM Assets</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <!-- Three.js import map — tells browser where to resolve 'three' and 'three/addons/' -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
   <link rel="stylesheet" href="css/reset.css" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/modal.css" />
@@ -33,6 +42,10 @@
   <!-- ░░ HERO ░░ -->
   <section id="hero">
     <canvas id="car-canvas"></canvas>
+    <div id="drag-hint">
+      <svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2v-4M9 21H5a2 2 0 0 1-2-2v-4m0 0h18"/></svg>
+      Drag to rotate
+    </div>
     <div class="hero-grid"></div>
     <div class="hero-glow"></div>
 
@@ -252,7 +265,7 @@
         <div class="foot-col"><h4>Company</h4><a href="#">Support</a><a href="#">Feedback</a><a href="#">Terms</a><a href="#">Privacy</a></div>
         <div class="foot-col"><h4>Connect</h4>
           <a href="#"><i data-lucide="message-circle"></i> Discord</a>
-          <a href="#"><i data-lucide="twitter"></i> Twitter / X</a>
+          <a href="#"><i data-lucide="x"></i> Twitter / X</a>
           <a href="#"><i data-lucide="github"></i> GitHub</a>
         </div>
       </div>
@@ -263,19 +276,26 @@
     </div>
   </footer>
 
+  <!-- ░░ REV HINT (bottom of page) ░░ -->
+  <div id="rev-hint">
+    <div class="rev-icon"><i data-lucide="gauge"></i></div>
+    <p>Keep scrolling — something's about to fire up</p>
+  </div>
+
   <!-- ░░ SHOWCASE MODAL ░░ -->
   <div id="modal-overlay" class="modal-overlay">
     <div class="modal-box" id="modal-box">
       <button class="modal-close" id="modal-close">✕</button>
-      <!-- content injected by modal.js -->
     </div>
   </div>
 
   <script src="js/cursor.js"></script>
-  <script src="js/car.js"></script>
+  <script type="module" src="js/car.js"></script>
   <script src="js/scroll.js"></script>
   <script src="js/counter.js"></script>
   <script src="js/modal.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/textfx.js"></script>
   <script>lucide.createIcons();</script>
 </body>
 </html>

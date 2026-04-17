@@ -1,334 +1,468 @@
-/* js/car.js
-   Detailed wireframe sports car — fixed background, full viewport.
-   Scroll drives Y rotation. Mouse tilts pitch + roll.
+/* js/car.js  —  ES module (importmap in index.html)
+   Changes vs previous:
+   - Hero camera is closer + wider FOV → car appears larger on load
+   - 12 cinematic keyframes instead of 8, covering every angle
+   - Drag-to-orbit: click+drag rotates car freely
+   - Smooth theme transition: all light values lerp over 1.4s instead of snapping
+   - Mouse parallax is stronger on hero
 */
-(function () {
-  const canvas = document.getElementById('car-canvas');
-  const ctx    = canvas.getContext('2d');
+import * as THREE from 'three';
+import { GLTFLoader }  from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 
-  let W, H, dpr;
-  let scrollY = 0, mouseX = 0.5, mouseY = 0.5;
-  let rotY = 0, tiltX = 0, tiltZ = 0;
+/* ══ LOADING SCREEN ══ */
+const loaderEl = document.createElement('div');
+loaderEl.id = 'car-loader';
+loaderEl.innerHTML = `
+  <div class="cl-inner">
+    <div class="cl-logo">MXC</div>
+    <div class="cl-bar-wrap"><div class="cl-bar" id="cl-bar"></div></div>
+    <div class="cl-label" id="cl-label">Loading renderer…</div>
+  </div>
+  <style>
+    #car-loader .cl-inner{text-align:center;}
+    #car-loader .cl-logo{font-family:'Bebas Neue',sans-serif;font-size:3rem;letter-spacing:6px;color:#fff;margin-bottom:2rem;}
+    #car-loader .cl-bar-wrap{width:260px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;margin:0 auto 1rem;}
+    #car-loader .cl-bar{height:100%;width:0%;background:linear-gradient(90deg,#00e5ff,#1e60ff);border-radius:2px;transition:width .25s ease;}
+    #car-loader .cl-label{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:#3d4f6e;}
+  </style>`;
+Object.assign(loaderEl.style, {
+  position:'fixed', inset:'0', zIndex:'9500',
+  background:'#04080f', display:'flex',
+  alignItems:'center', justifyContent:'center',
+  transition:'opacity .8s ease',
+});
+document.body.appendChild(loaderEl);
 
-  function resize() {
-    dpr = window.devicePixelRatio || 1;
-    W = window.innerWidth; H = window.innerHeight;
-    canvas.width  = W * dpr; canvas.height = H * dpr;
-    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  resize();
-  window.addEventListener('resize', resize);
-  window.addEventListener('scroll',    () => { scrollY = window.scrollY; }, { passive: true });
-  window.addEventListener('mousemove', e  => { mouseX = e.clientX/W; mouseY = e.clientY/H; });
+function setProgress(pct, label) {
+  const b = document.getElementById('cl-bar');
+  const l = document.getElementById('cl-label');
+  if (b) b.style.width = pct + '%';
+  if (l) l.textContent = label;
+}
+function hideLoader() {
+  loaderEl.style.opacity = '0';
+  setTimeout(() => loaderEl.remove(), 900);
+}
 
-  /* ══════════════════════════════════════════════════════
-     VERTICES  — low-poly sports car (side profile ~5.5m)
-     x = length (front +), y = height (up +), z = width (right +)
-  ══════════════════════════════════════════════════════ */
-  const V = [
-    // ── 0-3  CHASSIS FLOOR ──
-    [-2.6,-0.75,-1.05], [ 2.6,-0.75,-1.05],
-    [ 2.6,-0.75, 1.05], [-2.6,-0.75, 1.05],
+setProgress(20, 'Initialising scene…');
 
-    // ── 4-7  SILL RAIL ──
-    [-2.6, -0.1,-1.05], [ 2.6, -0.1,-1.05],
-    [ 2.6, -0.1, 1.05], [-2.6, -0.1, 1.05],
+/* ══ RENDERER ══ */
+const canvas   = document.getElementById('car-canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled      = true;
+renderer.shadowMap.type         = THREE.PCFSoftShadowMap;
+renderer.toneMapping            = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure    = 1.3;
+renderer.outputColorSpace       = THREE.SRGBColorSpace;
 
-    // ── 8-11 CABIN BASE ──
-    [-1.25, -0.1,-0.88], [ 1.25, -0.1,-0.88],
-    [ 1.25, -0.1, 0.88], [-1.25, -0.1, 0.88],
+/* ══ SCENE ══ */
+const scene = new THREE.Scene();
+scene.fog   = new THREE.FogExp2(0x04080f, 0.038);
 
-    // ── 12-15 CABIN ROOF ──
-    [-0.85, 1.05,-0.72], [ 0.85, 1.05,-0.72],
-    [ 0.85, 1.05, 0.72], [-0.85, 1.05, 0.72],
+/* ══ CAMERA ══ */
+const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.01, 300);
+camera.position.set(0, 0.9, 4.2);   // closer + higher FOV = bigger on screen
 
-    // ── 16-19 A-PILLAR (front cabin uprights) ──
-    [ 1.25, -0.1,-0.88], [ 1.25, -0.1, 0.88],
-    [ 0.85,  1.05,-0.72], [ 0.85, 1.05, 0.72],
+function resize() {
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
 
-    // ── 20-23 C-PILLAR (rear cabin uprights) ──
-    [-1.25, -0.1,-0.88], [-1.25, -0.1, 0.88],
-    [-0.85,  1.05,-0.72], [-0.85,  1.05, 0.72],
+/* ══════════════════════════════════════════
+   SMOOTH LIGHTING LERP SYSTEM
+   Instead of snapping lights in/out, we lerp
+   intensity of all lights over THEME_DURATION.
+══════════════════════════════════════════ */
+const THEME_DURATION = 1.4; // seconds
+let themeT      = 0;       // 0 = dark, 1 = light
+let themeTarget = 0;
+let themePrev   = 0;
+let themeTime   = 999;     // time since transition started
 
-    // ── 24-27 WINDSCREEN MIDLINE ──
-    [ 1.05,  0.0,-0.88], [ 1.05,  0.0, 0.88],
-    [ 0.85,  1.05,-0.72], [ 0.85, 1.05, 0.72],
+/* All lights live in scene always — we just lerp their intensities */
+const ambD  = new THREE.AmbientLight(0x0a1628, 0);
+const keyD  = new THREE.DirectionalLight(0x00e5ff, 0);
+keyD.position.set(4, 6, 5); keyD.castShadow = true;
+const rimD  = new THREE.DirectionalLight(0x1e60ff, 0);
+rimD.position.set(-5, 2, -4);
+const fillD = new THREE.DirectionalLight(0xffffff, 0);
+fillD.position.set(0, -3, 3);
+const hemiD = new THREE.HemisphereLight(0x0a1628, 0x000000, 0);
 
-    // ── 28-35 HOOD (bonnet) ──
-    [ 1.25, -0.1,-0.88],[ 2.6, -0.1,-0.88],
-    [ 2.6,  -0.1, 0.88],[ 1.25,-0.1, 0.88],
-    [ 1.25, -0.1,-0.5 ],[ 2.6, -0.1,-0.5 ],   // hood crease left
-    [ 2.6,  -0.1, 0.5 ],[ 1.25,-0.1, 0.5 ],   // hood crease right
+const ambL  = new THREE.AmbientLight(0xffffff, 0);
+const keyL  = new THREE.DirectionalLight(0xffffff, 0);
+keyL.position.set(5, 8, 5); keyL.castShadow = true;
+const fillL = new THREE.DirectionalLight(0xd0e8ff, 0);
+fillL.position.set(-4, 2, 3);
+const hemiL = new THREE.HemisphereLight(0xffffff, 0x8899aa, 0);
 
-    // ── 36-43 FRONT FASCIA ──
-    [ 2.6,  -0.1,-0.88],[ 2.75,-0.1,-0.7 ],
-    [ 2.75,-0.1, 0.7 ],[ 2.6, -0.1, 0.88],
-    [ 2.75,-0.1,-0.7 ],[ 2.75,-0.1, 0.7 ],     // bumper centre span
-    [ 2.75,-0.55,-0.7],[ 2.75,-0.55, 0.7],     // lower bumper
+// target intensities for each theme
+const DARK_INT  = { amb:2.8, key:4.0, rim:2.2, fill:0.5, hemi:0.9 };
+const LIGHT_INT = { amb:3.2, key:4.5, rim:0.0, fill:1.8, hemi:1.4 };
 
-    // ── 44-49 FRONT SPLITTER ──
-    [ 2.75,-0.55,-0.65],[ 2.75,-0.55, 0.65],
-    [ 2.9, -0.75,-0.65],[ 2.9, -0.75, 0.65],
-    [ 2.75,-0.75,-0.65],[ 2.75,-0.75, 0.65],
+scene.add(ambD, keyD, rimD, fillD, hemiD, ambL, keyL, fillL, hemiL);
 
-    // ── 50-57 HEADLIGHT FRAMES ──
-    [ 2.55,-0.05,-0.95],[ 2.75,-0.05,-0.95],   // left outer
-    [ 2.75,-0.05,-0.6 ],[ 2.55,-0.05,-0.6 ],
-    [ 2.55,-0.05, 0.95],[ 2.75,-0.05, 0.95],   // right outer
-    [ 2.75,-0.05, 0.6 ],[ 2.55,-0.05, 0.6 ],
+// fog colours
+const FOG_DARK  = new THREE.Color(0x04080f);
+const FOG_LIGHT = new THREE.Color(0xe8ecf5);
+const fogColor  = new THREE.Color().copy(FOG_DARK);
 
-    // ── 58-65 REAR FASCIA ──
-    [-2.6, -0.1,-0.88],[-2.75,-0.1,-0.7 ],
-    [-2.75,-0.1, 0.7 ],[-2.6, -0.1, 0.88],
-    [-2.75,-0.1,-0.7 ],[-2.75,-0.1, 0.7 ],
-    [-2.75,-0.55,-0.7],[-2.75,-0.55, 0.7],
+function updateLighting(dt) {
+  themeTime += dt;
+  const raw = Math.min(themeTime / THEME_DURATION, 1);
+  // ease in-out quart
+  const t = raw < 0.5
+    ? 8 * raw * raw * raw * raw
+    : 1 - Math.pow(-2 * raw + 2, 4) / 2;
 
-    // ── 66-71 REAR DIFFUSER ──
-    [-2.75,-0.55,-0.65],[-2.75,-0.55, 0.65],
-    [-2.9, -0.75,-0.65],[-2.9, -0.75, 0.65],
-    [-2.75,-0.75,-0.65],[-2.75,-0.75, 0.65],
+  themeT = themePrev + (themeTarget - themePrev) * t;
 
-    // ── 72-79 TAIL LIGHTS ──
-    [-2.55,-0.05,-0.95],[-2.75,-0.05,-0.95],
-    [-2.75,-0.05,-0.6 ],[-2.55,-0.05,-0.6 ],
-    [-2.55,-0.05, 0.95],[-2.75,-0.05, 0.95],
-    [-2.75,-0.05, 0.6 ],[-2.55,-0.05, 0.6 ],
+  const d = 1 - themeT;
+  const l = themeT;
 
-    // ── 80-83 ROOF SCOOP / SUNROOF ──
-    [-0.3,  1.06,-0.45],[ 0.3,  1.06,-0.45],
-    [ 0.3,  1.06, 0.45],[-0.3,  1.06, 0.45],
+  ambD.intensity  = DARK_INT.amb  * d;
+  keyD.intensity  = DARK_INT.key  * d;
+  rimD.intensity  = DARK_INT.rim  * d;
+  fillD.intensity = DARK_INT.fill * d;
+  hemiD.intensity = DARK_INT.hemi * d;
 
-    // ── 84-91 REAR SPOILER ──
-    [-1.5,  1.1,-0.9 ],[-0.85, 1.1,-0.9 ],
-    [-0.85, 1.1, 0.9 ],[-1.5,  1.1, 0.9 ],    // blade
-    [-1.5,  1.05,-0.9],[-1.5,  0.85,-0.9],    // left end plate
-    [-1.5,  1.05, 0.9],[-1.5,  0.85, 0.9],    // right end plate
+  ambL.intensity  = LIGHT_INT.amb  * l;
+  keyL.intensity  = LIGHT_INT.key  * l;
+  fillL.intensity = LIGHT_INT.fill * l;
+  hemiL.intensity = LIGHT_INT.hemi * l;
 
-    // ── 92-99 DOOR PANEL LINES ──
-    [ 0.25,-0.1,-1.05],[ 0.25, 0.82,-1.05],   // front door left
-    [ 0.25,-0.1, 1.05],[ 0.25, 0.82, 1.05],
-    [-0.25,-0.1,-1.05],[-0.25, 0.82,-1.05],   // rear door left
-    [-0.25,-0.1, 1.05],[-0.25, 0.82, 1.05],
+  // lerp fog colour
+  fogColor.lerpColors(FOG_DARK, FOG_LIGHT, themeT);
+  scene.fog.color.copy(fogColor);
 
-    // ── 100-107 SIDE SKIRTS ──
-    [ 2.4,-0.55,-1.05],[ 2.4,-0.75,-1.05],
-    [-2.4,-0.55,-1.05],[-2.4,-0.75,-1.05],
-    [ 2.4,-0.55, 1.05],[ 2.4,-0.75, 1.05],
-    [-2.4,-0.55, 1.05],[-2.4,-0.75, 1.05],
+  // lerp floor colour
+  if (floor) floor.material.color.lerpColors(new THREE.Color(0x000000), new THREE.Color(0xcccccc), themeT);
 
-    // ── 108-111 SIDE VENTS (behind front wheel) ──
-    [ 1.7,-0.1,-1.05],[ 1.9,-0.1,-1.05],
-    [ 1.9,-0.4,-1.05],[ 1.7,-0.4,-1.05],
+  // lerp tone mapping exposure
+  renderer.toneMappingExposure = 1.3 + themeT * 0.25;
+}
 
-    // ── 112-115 SIDE VENTS right ──
-    [ 1.7,-0.1, 1.05],[ 1.9,-0.1, 1.05],
-    [ 1.9,-0.4, 1.05],[ 1.7,-0.4, 1.05],
+// set dark intensities immediately
+ambD.intensity  = DARK_INT.amb;
+keyD.intensity  = DARK_INT.key;
+rimD.intensity  = DARK_INT.rim;
+fillD.intensity = DARK_INT.fill;
+hemiD.intensity = DARK_INT.hemi;
 
-    // ── 116-123 WINDOW FRAMES ──
-    [ 1.05, 0.05,-0.87],[ 0.95, 1.0,-0.71],   // front left
-    [ 0.95, 1.0,-0.71],[-0.85, 1.0,-0.71],
-    [-0.85, 1.0,-0.71],[-1.1,  0.05,-0.87],
-    [ 1.05, 0.05, 0.87],[ 0.95, 1.0, 0.71],   // front right
-    [ 0.95, 1.0, 0.71],[-0.85, 1.0, 0.71],
-    [-0.85, 1.0, 0.71],[-1.1,  0.05, 0.87],
+/* ══ FLOOR ══ */
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(40, 40),
+  new THREE.MeshStandardMaterial({ color:0x000000, metalness:0.85, roughness:0.25, transparent:true, opacity:0.45 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
 
-    // ── 128-131 UNDERCARRIAGE ──
-    [ 2.0,-0.75,-0.8],[ 2.0,-0.75, 0.8],
-    [-2.0,-0.75,-0.8],[-2.0,-0.75, 0.8],
+/* ══ LOAD GLB ══ */
+setProgress(35, 'Loading car model…  0%');
 
-    // ── 132-135 EXHAUST TIPS ──
-    [-2.75,-0.58,-0.55],[-2.75,-0.58,-0.38],
-    [-2.75,-0.58, 0.38],[-2.75,-0.58, 0.55],
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 
-    // ── 136-143 WHEEL ARCH DETAIL front ──
-    [ 1.85, 0.0,-1.05],[ 1.85,-0.75,-1.05],
-    [ 1.15, 0.0,-1.05],[ 1.15,-0.75,-1.05],
-    [ 1.85, 0.0, 1.05],[ 1.85,-0.75, 1.05],
-    [ 1.15, 0.0, 1.05],[ 1.15,-0.75, 1.05],
+const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(draco);
 
-    // ── 144-151 WHEEL ARCH DETAIL rear ──
-    [-1.15, 0.0,-1.05],[-1.15,-0.75,-1.05],
-    [-1.85, 0.0,-1.05],[-1.85,-0.75,-1.05],
-    [-1.15, 0.0, 1.05],[-1.15,-0.75, 1.05],
-    [-1.85, 0.0, 1.05],[-1.85,-0.75, 1.05],
+let car = null;
 
-    // ── 152-155 WHEEL CENTRES ──
-    [ 1.5,-0.75,-1.05],[ 1.5,-0.75, 1.05],
-    [-1.5,-0.75,-1.05],[-1.5,-0.75, 1.05],
-  ];
+gltfLoader.load(
+  '../mclaren.glb',
+  (gltf) => {
+    setProgress(96, 'Preparing…');
+    car = gltf.scene;
 
-  const EDGES = [
-    // chassis
-    [0,1],[1,2],[2,3],[3,0], [4,5],[5,6],[6,7],[7,4],
-    [0,4],[1,5],[2,6],[3,7],
-    // cabin
-    [8,9],[9,10],[10,11],[11,8],
-    [12,13],[13,14],[14,15],[15,12],
-    [8,12],[9,13],[10,14],[11,15],
-    // A-pillars
-    [16,18],[17,19],
-    // C-pillars
-    [20,22],[21,23],
-    // windscreen mid
-    [24,26],[25,27],
-    // hood outline + creases
-    [28,29],[29,30],[30,31],[31,28],
-    [32,33],[34,35],[32,35],[33,34],
-    // front fascia
-    [36,37],[37,38],[38,39],
-    [40,41],[42,43],[40,42],[41,43],
-    // front splitter
-    [44,45],[46,47],[44,46],[45,47],[44,48],[45,49],
-    // headlights left
-    [50,51],[51,52],[52,53],[53,50],
-    // headlights right
-    [54,55],[55,56],[56,57],[57,54],
-    // rear fascia
-    [58,59],[59,60],[60,61],
-    [62,63],[64,65],[62,64],[63,65],
-    // diffuser
-    [66,67],[68,69],[66,68],[67,69],[66,70],[67,71],
-    // tail lights left
-    [72,73],[73,74],[74,75],[75,72],
-    // tail lights right
-    [76,77],[77,78],[78,79],[79,76],
-    // roof scoop
-    [80,81],[81,82],[82,83],[83,80],
-    // spoiler blade
-    [84,85],[85,86],[86,87],[87,84],
-    // spoiler endplates
-    [84,88],[88,89],[86,90],[90,91],
-    // doors
-    [92,93],[94,95],[96,97],[98,99],
-    [92,96],[93,97],
-    // side skirts
-    [100,101],[102,103],[104,105],[106,107],
-    [100,102],[101,103],[104,106],[105,107],
-    // side vents left
-    [108,109],[109,110],[110,111],[111,108],
-    // side vents right
-    [112,113],[113,114],[114,115],[115,112],
-    // window frames
-    [116,117],[117,118],[118,119],
-    [120,121],[121,122],[122,123],
-    // undercarriage cross
-    [128,129],[130,131],[128,130],[129,131],
-    // exhaust
-    [132,133],[134,135],
-    // wheel arches front
-    [136,137],[138,139],[136,138],[137,139],
-    [140,141],[142,143],[140,142],[141,143],
-    // wheel arches rear
-    [144,145],[146,147],[144,146],[145,147],
-    [148,149],[150,151],[148,150],[149,151],
-  ];
+    const box    = new THREE.Box3().setFromObject(car);
+    const centre = box.getCenter(new THREE.Vector3());
+    const size   = box.getSize(new THREE.Vector3());
+    const sc     = 3.8 / Math.max(size.x, size.y, size.z);  // slightly larger scale
+    car.scale.setScalar(sc);
+    car.position.sub(centre.multiplyScalar(sc));
+    const b2 = new THREE.Box3().setFromObject(car);
+    car.position.y -= b2.min.y;
 
-  // wheel centre indices
-  const WHEELS = [152, 153, 154, 155];
-
-  /* ── projection ── */
-  function project(v, rY, rX, rZ, cx, cy, scale) {
-    let [x,y,z] = v;
-    let cosY=Math.cos(rY),sinY=Math.sin(rY);
-    let x1= x*cosY+z*sinY, z1=-x*sinY+z*cosY;
-    let cosX=Math.cos(rX),sinX=Math.sin(rX);
-    let y2= y*cosX-z1*sinX, z2= y*sinX+z1*cosX;
-    let cosZ=Math.cos(rZ),sinZ=Math.sin(rZ);
-    let x3= x1*cosZ-y2*sinZ, y3= x1*sinZ+y2*cosZ;
-    const fov=5.5, pz=z2+fov;
-    return [(x3/pz)*scale+cx, (-y3/pz)*scale+cy, pz, z2];
-  }
-  function lerp(a,b,t){ return a+(b-a)*t; }
-
-  /* ── draw ── */
-  function draw() {
-    ctx.clearRect(0,0,W,H);
-
-    const pageH = Math.max(1, document.body.scrollHeight - window.innerHeight);
-    const sf    = Math.min(1, scrollY / pageH);
-    const tgtY  = sf * Math.PI * 4 + (mouseX-0.5)*0.7;
-    const tgtX  = (mouseY-0.5)*0.45;
-    const tgtZ  = (mouseX-0.5)*0.18;
-
-    rotY  = lerp(rotY,  tgtY,  0.035);
-    tiltX = lerp(tiltX, tgtX,  0.055);
-    tiltZ = lerp(tiltZ, tgtZ,  0.055);
-
-    const scale = Math.min(W,H) * 0.40;
-    const cx = W*0.5, cy = H*0.53;
-
-    const P = V.map(v => project(v, rotY, tiltX, tiltZ, cx, cy, scale));
-
-    // ── draw edges with depth-based brightness ──
-    EDGES.forEach(([a,b]) => {
-      const [ax,ay,,az]=P[a], [bx,by,,bz]=P[b];
-      const depth = (az+bz)*0.5;
-      const alpha = Math.max(0.04, 0.6-depth*0.065);
-      ctx.globalAlpha = alpha;
-      ctx.strokeStyle = '#00e5ff';
-      ctx.lineWidth   = 0.7;
-      ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.stroke();
-    });
-
-    // ── headlight glow rects ──
-    [[50,52],[54,56]].forEach(([a,b]) => {
-      const [ax,ay]=P[a], [bx,by]=P[b];
-      ctx.globalAlpha = 0.12;
-      ctx.fillStyle = '#00e5ff';
-      ctx.fillRect(Math.min(ax,bx)-2, Math.min(ay,by)-2,
-                   Math.abs(bx-ax)+4, Math.abs(by-ay)+4);
-    });
-
-    // ── tail light glow rects (warm tint) ──
-    [[72,74],[76,78]].forEach(([a,b]) => {
-      const [ax,ay]=P[a], [bx,by]=P[b];
-      ctx.globalAlpha = 0.1;
-      ctx.fillStyle = '#ff3030';
-      ctx.fillRect(Math.min(ax,bx)-2, Math.min(ay,by)-2,
-                   Math.abs(bx-ax)+4, Math.abs(by-ay)+4);
-    });
-
-    // ── wheels ──
-    WHEELS.forEach((i,wi) => {
-      const [px,py,pz]=P[i];
-      const r = scale * 0.24 / Math.max(pz,0.5);
-      // tyre
-      ctx.globalAlpha = 0.4;
-      ctx.strokeStyle = '#00e5ff';
-      ctx.lineWidth   = 1.0;
-      ctx.beginPath(); ctx.ellipse(px,py, r, r*0.27, 0, 0, Math.PI*2); ctx.stroke();
-      // rim ring
-      ctx.globalAlpha = 0.25;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.ellipse(px,py, r*0.65, r*0.65*0.27, 0, 0, Math.PI*2); ctx.stroke();
-      // spokes
-      for (let s=0;s<6;s++){
-        const a=(s/6)*Math.PI*2 + rotY*(wi<2?2.8:-2.8);
-        ctx.globalAlpha = 0.22;
-        ctx.lineWidth = 0.6;
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px+Math.cos(a)*r, py+Math.sin(a)*r*0.27);
-        ctx.stroke();
+    car.traverse(c => {
+      if (c.isMesh) {
+        c.castShadow = c.receiveShadow = true;
+        if (c.material) {
+          if (c.material.metalness !== undefined) c.material.metalness = Math.max(c.material.metalness, 0.5);
+          if (c.material.roughness !== undefined) c.material.roughness = Math.min(c.material.roughness, 0.5);
+          c.material.needsUpdate = true;
+        }
       }
-      // centre hub dot
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = '#00e5ff';
-      ctx.beginPath(); ctx.arc(px,py,2,0,Math.PI*2); ctx.fill();
     });
 
-    // ── vertex glow dots ──
-    ctx.fillStyle = '#00e5ff';
-    P.forEach(([px,py,,depth],i) => {
-      if(i > 131) return; // skip wheel-arch extra verts
-      const a = Math.max(0.04, 0.45-depth*0.055);
-      ctx.globalAlpha = a;
-      ctx.beginPath(); ctx.arc(px,py,1.3,0,Math.PI*2); ctx.fill();
-    });
-
-    ctx.globalAlpha = 1;
-    requestAnimationFrame(draw);
+    scene.add(car);
+    setProgress(100, 'Ready');
+    setTimeout(hideLoader, 500);
+  },
+  (xhr) => {
+    if (xhr.lengthComputable) {
+      const p = Math.round((xhr.loaded / xhr.total) * 57) + 35;
+      setProgress(p, `Loading car…  ${Math.round((xhr.loaded / xhr.total) * 100)}%`);
+    }
+  },
+  (err) => {
+    console.error('GLB error:', err);
+    setProgress(100, '⚠ Could not load mclaren.glb');
   }
-  requestAnimationFrame(draw);
-})();
+);
+
+/* ══════════════════════════════════════════
+   CAMERA KEYFRAMES  (12 angles, scroll 0→1)
+   Covering: wide → front wing → nose → low
+   belly → cockpit top → right side →
+   rear wing → exhaust → left side →
+   high rear → full pull-back → idle
+══════════════════════════════════════════ */
+const KF = [
+  // 0.00 — big establishing shot, car fills frame
+  { t:0.00, p:[ 0.0,  0.7,  3.8],  l:[0,    0.25, 0],  fov:52 },
+  // 0.08 — drift right to front wing
+  { t:0.08, p:[ 2.2,  0.5,  2.8],  l:[1.8,  0.2,  0],  fov:50 },
+  // 0.18 — close on front nose / splitter
+  { t:0.18, p:[ 3.4,  0.08, 0.6],  l:[2.8,  0.0,  0],  fov:65 },
+  // 0.28 — sweep underneath — belly / floor
+  { t:0.28, p:[ 1.0, -0.15, 2.6],  l:[0,   -0.05, 0],  fov:55 },
+  // 0.38 — driver's side door level
+  { t:0.38, p:[ 0.0,  0.55, 3.2],  l:[0,    0.4,  0],  fov:48 },
+  // 0.46 — cockpit overhead, looking down into seat
+  { t:0.46, p:[ 0.1,  3.2,  1.0],  l:[0,    0.6,  0],  fov:36 },
+  // 0.55 — swoops around to right side
+  { t:0.55, p:[ 0.0,  0.7, -3.4],  l:[0,    0.4,  0],  fov:48 },
+  // 0.63 — rear-right 3/4 low
+  { t:0.63, p:[-2.2,  0.35,-2.2],  l:[-1.6, 0.3,  0],  fov:54 },
+  // 0.72 — rear wing tight close-up
+  { t:0.72, p:[-2.8,  1.15, 0.5],  l:[-2.0, 0.85, 0],  fov:58 },
+  // 0.81 — exhaust / diffuser low rear
+  { t:0.81, p:[-3.6,  0.18, 0.8],  l:[-2.5, 0.1,  0],  fov:62 },
+  // 0.90 — high rear aerial
+  { t:0.90, p:[-2.0,  3.8,  2.5],  l:[0,    0.5,  0],  fov:44 },
+  // 1.00 — wide idle / rev ready
+  { t:1.00, p:[ 0.0,  0.9,  4.6],  l:[0,    0.3,  0],  fov:48 },
+];
+
+function lv(a, b, t) { return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+// smooth-step
+function ss(t) { return t*t*(3-2*t); }
+// smoother-step (Ken Perlin)
+function sss(t) { return t*t*t*(t*(t*6-15)+10); }
+
+function getCam(sf) {
+  let lo = KF[0], hi = KF[KF.length-1];
+  for (let i = 0; i < KF.length-1; i++) {
+    if (sf >= KF[i].t && sf <= KF[i+1].t) { lo = KF[i]; hi = KF[i+1]; break; }
+  }
+  const st = sss(Math.min(1, (sf - lo.t) / Math.max(0.001, hi.t - lo.t)));
+  return { p: lv(lo.p, hi.p, st), l: lv(lo.l, hi.l, st), fov: lo.fov + (hi.fov - lo.fov) * st };
+}
+
+const cPos = new THREE.Vector3(0, 0.9, 4.2);
+const cTgt = new THREE.Vector3(0, 0.25, 0);
+const _tv  = new THREE.Vector3();
+let cFov   = 52;
+
+/* ══ MOUSE PARALLAX ══ */
+let mX = 0, mY = 0, mXs = 0, mYs = 0;
+window.addEventListener('mousemove', e => {
+  mX = (e.clientX / innerWidth  - 0.5) * 2;
+  mY = (e.clientY / innerHeight - 0.5) * 2;
+});
+
+/* ══ DRAG TO ORBIT ══ */
+let dragActive = false;
+let dragStartX = 0, dragStartY = 0;
+let dragRotY   = 0, dragRotX   = 0;
+let dragVelY   = 0, dragVelX   = 0;  // momentum
+let lastDragX  = 0, lastDragY  = 0;
+
+canvas.addEventListener('mousedown', e => {
+  dragActive = true;
+  dragStartX = lastDragX = e.clientX;
+  dragStartY = lastDragY = e.clientY;
+  dragVelY = dragVelX = 0;
+  canvas.style.cursor = 'grabbing';
+});
+window.addEventListener('mousemove', e => {
+  if (!dragActive) return;
+  const dx = e.clientX - lastDragX;
+  const dy = e.clientY - lastDragY;
+  dragVelY = dx * 0.008;
+  dragVelX = dy * 0.005;
+  dragRotY += dx * 0.008;
+  dragRotX += dy * 0.005;
+  dragRotX  = Math.max(-0.7, Math.min(0.7, dragRotX));
+  lastDragX = e.clientX;
+  lastDragY = e.clientY;
+});
+window.addEventListener('mouseup', () => {
+  dragActive = false;
+  canvas.style.cursor = 'default';
+});
+
+// touch drag
+canvas.addEventListener('touchstart', e => {
+  dragActive = true;
+  dragStartX = lastDragX = e.touches[0].clientX;
+  dragStartY = lastDragY = e.touches[0].clientY;
+  dragVelY = dragVelX = 0;
+}, { passive:true });
+window.addEventListener('touchmove', e => {
+  if (!dragActive) return;
+  const dx = e.touches[0].clientX - lastDragX;
+  const dy = e.touches[0].clientY - lastDragY;
+  dragVelY = dx * 0.008;
+  dragVelX = dy * 0.005;
+  dragRotY += dx * 0.008;
+  dragRotX += dy * 0.005;
+  dragRotX  = Math.max(-0.7, Math.min(0.7, dragRotX));
+  lastDragX = e.touches[0].clientX;
+  lastDragY = e.touches[0].clientY;
+}, { passive:true });
+window.addEventListener('touchend', () => { dragActive = false; });
+
+/* ══ FLAME PARTICLES ══ */
+const fc = document.createElement('canvas');
+fc.width = fc.height = 64;
+const fctx = fc.getContext('2d');
+const fgrad = fctx.createRadialGradient(32,32,0,32,32,32);
+fgrad.addColorStop(0,   'rgba(255,255,200,1)');
+fgrad.addColorStop(0.3, 'rgba(255,110,0,0.85)');
+fgrad.addColorStop(0.7, 'rgba(255,0,0,0.3)');
+fgrad.addColorStop(1,   'rgba(0,0,0,0)');
+fctx.fillStyle = fgrad;
+fctx.fillRect(0,0,64,64);
+const fTex = new THREE.CanvasTexture(fc);
+
+const MAXF = 300;
+const fArr = new Float32Array(MAXF * 3);
+const fGeo = new THREE.BufferGeometry();
+fGeo.setAttribute('position', new THREE.BufferAttribute(fArr, 3));
+const fMat = new THREE.PointsMaterial({
+  map:fTex, size:0.22, sizeAttenuation:true,
+  transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+});
+scene.add(new THREE.Points(fGeo, fMat));
+
+const flames = [];
+function spawnFlame(p) {
+  for (let i = 0; i < 10; i++) {
+    flames.push({
+      x: p.x + (Math.random()-.5)*.2,
+      y: p.y,
+      z: p.z + (Math.random()-.5)*.2,
+      vx: (Math.random()-.5)*.06,
+      vy:  0.06 + Math.random()*.16,
+      vz: (Math.random()-.5)*.06,
+      life:  1,
+      decay: 0.018 + Math.random()*.022,
+    });
+  }
+}
+
+/* ══ THEME SWAP ══
+   flipCarLighting(goLight) — called mid-spin, only flips 3D lighting
+   triggerThemeBurst()      — called after page class toggle, syncs to body.classList
+*/
+function applyLighting(goLight) {
+  themePrev   = themeT;
+  themeTarget = goLight ? 1 : 0;
+  themeTime   = 0;
+}
+
+window.flipCarLighting  = function(goLight) { applyLighting(goLight); };
+window.triggerThemeBurst = function() {
+  applyLighting(document.body.classList.contains('light'));
+};
+
+/* ══ RENDER LOOP ══ */
+let scrollY  = 0;
+window.addEventListener('scroll', () => { scrollY = window.scrollY; }, { passive:true });
+
+let revActive = false, revTime = 0, revDone = false;
+let elapsed = 0, last = performance.now();
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const dt = Math.min((now - last) / 1000, 0.05);
+  last = now; elapsed += dt;
+
+  updateLighting(dt);
+
+  /* smooth mouse */
+  mXs += (mX - mXs) * 0.08;
+  mYs += (mY - mYs) * 0.08;
+
+  /* drag momentum */
+  if (!dragActive) {
+    dragVelY *= 0.92;
+    dragVelX *= 0.92;
+    dragRotY += dragVelY;
+    dragRotX += dragVelX;
+    dragRotX  = Math.max(-0.7, Math.min(0.7, dragRotX));
+  }
+
+  const pageH = Math.max(1, document.body.scrollHeight - innerHeight);
+  const sf    = Math.min(1, scrollY / pageH);
+
+  /* rev at bottom */
+  if (sf >= 0.995 && !revDone) { revDone = true; revActive = true; revTime = 0; }
+  if (sf < 0.99)  revDone = false;
+  if (revActive)  revTime += dt;
+
+  /* camera */
+  const kf = getCam(sf);
+  const tPos = new THREE.Vector3(
+    kf.p[0] + mXs * 0.38,
+    kf.p[1] + mYs * 0.16,
+    kf.p[2]
+  );
+  cPos.lerp(tPos, 0.04);
+  _tv.set(...kf.l);
+  cTgt.lerp(_tv, 0.04);
+  cFov += (kf.fov - cFov) * 0.04;
+  camera.position.copy(cPos);
+  camera.lookAt(cTgt);
+  camera.fov = cFov;
+  camera.updateProjectionMatrix();
+
+  /* car rotation from drag */
+  if (car) {
+    const targetY = dragRotY;
+    const targetX = dragRotX;
+    car.rotation.y += (targetY - car.rotation.y) * 0.12;
+    car.rotation.x += (targetX - car.rotation.x) * 0.12;
+    car.position.y += Math.sin(elapsed * 1.4) * 0.0003;
+
+    if (revActive && revTime < 4) {
+      car.position.x += (Math.random()-.5) * .003;
+      car.position.y += (Math.random()-.5) * .003;
+      if (Math.random() > .3)
+        spawnFlame(new THREE.Vector3(car.position.x - 1.6, car.position.y + 0.3, car.position.z));
+    }
+  }
+
+  /* flames */
+  let fi = 0;
+  for (let i = flames.length - 1; i >= 0; i--) {
+    const f = flames[i];
+    f.x += f.vx; f.y += f.vy; f.z += f.vz;
+    f.vy -= 0.001; f.life -= f.decay;
+    if (f.life <= 0) { flames.splice(i,1); continue; }
+    if (fi < MAXF) { fArr[fi*3]=f.x; fArr[fi*3+1]=f.y; fArr[fi*3+2]=f.z; fi++; }
+  }
+  for (let i=fi; i<MAXF; i++) fArr[i*3]=fArr[i*3+1]=fArr[i*3+2]=9999;
+  fGeo.attributes.position.needsUpdate = true;
+  fMat.size = 0.18 + Math.sin(elapsed * 9) * 0.04;
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);

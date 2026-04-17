@@ -7,13 +7,13 @@ const PLANS = {
     desc: 'Perfect for new server owners looking to dip their toes into premium FiveM assets without a huge commitment.',
     color: '#22d3ee',
     highlights: [
-      { icon: '📦', title: '5 Scripts', desc: 'Hand-picked starter scripts', num: '5', color: '#22d3ee' },
-      { icon: '⚡', title: 'Fast Setup', desc: 'Plug and play in minutes', num: '<5min', color: '#3b82f6' },
-      { icon: '🛡', title: 'Support', desc: 'Standard ticket support', num: '24h', color: '#6366f1' },
+      { icon: 'package',      title: '5 Scripts',  desc: 'Hand-picked starter scripts',  num: '5',     color: '#22d3ee' },
+      { icon: 'zap',          title: 'Fast Setup',  desc: 'Plug and play in minutes',     num: '<5min', color: '#3b82f6' },
+      { icon: 'shield-check', title: 'Support',     desc: 'Standard ticket support',      num: '24h',   color: '#6366f1' },
     ],
     bars: [
       { label: 'Script Quality', val: 80 },
-      { label: 'Support Speed', val: 60 },
+      { label: 'Support Speed',  val: 60 },
       { label: 'Content Access', val: 30 },
     ]
   },
@@ -23,13 +23,13 @@ const PLANS = {
     desc: 'Trusted by thousands of serious server owners. Unlock everything MXC has to offer — scripts, maps, interiors, and more.',
     color: '#1e60ff',
     highlights: [
-      { icon: '🗝', title: 'All Products', desc: 'Every script and map included', num: '50+', color: '#00e5ff' },
-      { icon: '⚡', title: 'Zero FPS Drop', desc: 'Obsessively optimized', num: '0.00ms', color: '#1e60ff' },
-      { icon: '🚀', title: 'Early Access', desc: 'New releases before anyone else', num: '1st', color: '#7c3aed' },
+      { icon: 'key',        title: 'All Products',  desc: 'Every script and map included',     num: '50+',   color: '#00e5ff' },
+      { icon: 'gauge',      title: 'Zero FPS Drop', desc: 'Obsessively optimized',              num: '0.00ms',color: '#1e60ff' },
+      { icon: 'rocket',     title: 'Early Access',  desc: 'New releases before anyone else',   num: '1st',   color: '#7c3aed' },
     ],
     bars: [
       { label: 'Script Quality', val: 100 },
-      { label: 'Support Speed', val: 90 },
+      { label: 'Support Speed',  val: 90  },
       { label: 'Content Access', val: 100 },
     ]
   },
@@ -39,13 +39,13 @@ const PLANS = {
     desc: 'Built for large networks and development studios that demand custom work, private assets, and a dedicated support agent.',
     color: '#7c3aed',
     highlights: [
-      { icon: '🎨', title: 'Custom Mods', desc: 'Modifications built for your server', num: '∞', color: '#7c3aed' },
-      { icon: '🤝', title: 'Dedicated Agent', desc: 'Your personal support line', num: '1-on-1', color: '#00e5ff' },
-      { icon: '🔒', title: 'Private Assets', desc: 'Exclusive content only for you', num: 'Private', color: '#1e60ff' },
+      { icon: 'pen-tool', title: 'Custom Mods',     desc: 'Modifications built for your server', num: '∞',       color: '#7c3aed' },
+      { icon: 'headphones',title: 'Dedicated Agent',desc: 'Your personal support line',          num: '1-on-1',  color: '#00e5ff' },
+      { icon: 'lock',     title: 'Private Assets',  desc: 'Exclusive content only for you',      num: 'Private', color: '#1e60ff' },
     ],
     bars: [
       { label: 'Script Quality', val: 100 },
-      { label: 'Support Speed', val: 100 },
+      { label: 'Support Speed',  val: 100 },
       { label: 'Content Access', val: 100 },
     ]
   }
@@ -77,7 +77,7 @@ function openModal(planKey) {
       <div class="modal-highlights">
         ${plan.highlights.map((h, i) => `
           <div class="m-hl" style="--hl-color:${h.color}; animation-delay:${i * 0.1}s;">
-            <div class="m-hl-icon">${h.icon}</div>
+            <div class="m-hl-icon"><i data-lucide="${h.icon}"></i></div>
             <div class="m-hl-title">${h.title}</div>
             <div class="m-hl-desc">${h.desc}</div>
             <div class="m-hl-num">${h.num}</div>
@@ -106,6 +106,9 @@ function openModal(planKey) {
 
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  // render lucide icons injected into modal HTML
+  if (window.lucide) lucide.createIcons();
 
   // close buttons
   box.querySelector('#modal-close-inner').addEventListener('click', closeModal);
