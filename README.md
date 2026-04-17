@@ -66,7 +66,7 @@ A cinematic, scroll-driven landing page concept built to explore modern web anim
 ```
 mxc-site/
 ├── index.html          # Main page
-├── mclaren.glb         # 3D car model (not in repo — add manually)
+├── mclaren.glb         # 3D car model (not in repo — add manually) from sketchfab
 ├── css/
 │   ├── reset.css       # Base reset
 │   ├── main.css        # All page styles + light theme
